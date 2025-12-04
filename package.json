@@ -1,0 +1,25 @@
+{
+  "name": "cypress_api_testing",
+  "version": "1.0.0",
+  "description": "Cypress API testing for Happy Testing application",
+  "main": "index.js",
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:run:api": "cypress run --spec 'cypress/e2e/**/*.api.cy.js'",
+    "cy:run:api:auth": "cypress run --spec 'cypress/e2e/auth.api.cy.js'",
+    "cy:run:api:dishes": "cypress run --spec 'cypress/e2e/dishes.api.cy.js'",
+    "cy:run:api:simple": "cypress run --spec 'cypress/e2e/simple.api.cy.js'",
+    "test": "cypress run --spec 'cypress/e2e/**/*.api.cy.js'",
+    "test:api": "cypress run --spec 'cypress/e2e/**/*.api.cy.js'",
+    "test:headed": "cypress run --headed --spec 'cypress/e2e/**/*.api.cy.js'",
+    "test:chrome": "cypress run --browser chrome --spec 'cypress/e2e/**/*.api.cy.js'",
+    "test:ci": "cypress run --browser electron --headless --spec 'cypress/e2e/**/*.api.cy.js'"
+  },
+  "keywords": ["cypress", "api", "testing", "e2e"],
+  "author": "Marcos Alvarez",
+  "license": "ISC",
+  "devDependencies": {
+    "cypress": "^13.6.0"
+  }
+}
