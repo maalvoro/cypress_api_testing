@@ -74,7 +74,43 @@ jobs:
       
       - name: Run Cypress API tests
         working-directory: cypress_api_testing
-        run: npm run test:ci
+        run: |
+          npm run test:ci
+          echo "CYPRESS_EXIT_CODE=$?" >> $GITHUB_ENV
+      
+      - name: Generate test summary
+        if: always()
+        working-directory: cypress_api_testing
+        run: |
+          echo "## 🧪 Cypress API Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Parse JSON results if available
+          if [ -f cypress/results/results.json ]; then
+            TOTAL=$(jq '.stats.tests' cypress/results/results.json)
+            PASSED=$(jq '.stats.passes' cypress/results/results.json)
+            FAILED=$(jq '.stats.failures' cypress/results/results.json)
+            DURATION=$(jq '.stats.duration' cypress/results/results.json)
+            
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Total Tests | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏱️ Duration | ${DURATION}ms |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$FAILED" -eq 0 ]; then
+              echo "### ✅ All tests passed successfully!" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ❌ Some tests failed. Please check the logs." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "✅ **All Cypress API tests completed**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Execution completed at:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload Cypress screenshots
         uses: actions/upload-artifact@v4

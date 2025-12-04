@@ -14,7 +14,7 @@
     "test:api": "cypress run --spec 'cypress/e2e/**/*.api.cy.js'",
     "test:headed": "cypress run --headed --spec 'cypress/e2e/**/*.api.cy.js'",
     "test:chrome": "cypress run --browser chrome --spec 'cypress/e2e/**/*.api.cy.js'",
-    "test:ci": "cypress run --browser electron --headless --spec 'cypress/e2e/**/*.api.cy.js'"
+    "test:ci": "cypress run --browser electron --headless --spec 'cypress/e2e/**/*.api.cy.js' --reporter json --reporter-options output=cypress/results/results.json"
   },
   "keywords": ["cypress", "api", "testing", "e2e"],
   "author": "Marcos Alvarez",
