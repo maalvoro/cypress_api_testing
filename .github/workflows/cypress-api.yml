@@ -76,12 +76,15 @@ jobs:
         working-directory: cypress_api_testing
         run: npm run test:ci
         continue-on-error: true
+        id: cypress_tests
       
       - name: Generate test summary
         if: always()
         working-directory: cypress_api_testing
         run: |
-          echo "## 🧪 Cypress API Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "# 🚀 Cypress API Testing" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🧪 Cypress API Testing Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # Parse JSON results if available
@@ -91,27 +94,60 @@ jobs:
             const results = JSON.parse(fs.readFileSync('cypress/results/results.json', 'utf8'));
             const stats = results.stats;
             
-            console.log('| Metric | Value |');
-            console.log('|--------|-------|');
-            console.log(\`| 📊 Total Tests | \${stats.tests} |\`);
-            console.log(\`| ✅ Passed | \${stats.passes} |\`);
-            console.log(\`| ❌ Failed | \${stats.failures} |\`);
-            console.log(\`| ⏭️ Pending | \${stats.pending} |\`);
-            console.log(\`| ⏱️ Duration | \${(stats.duration / 1000).toFixed(2)}s |\`);
+            const durationSeconds = Math.floor(stats.duration / 1000);
+            const minutes = Math.floor(durationSeconds / 60);
+            const seconds = durationSeconds % 60;
+            const durationFormatted = \`\${String(minutes).padStart(2, '0')}:\${String(seconds).padStart(2, '0')}\`;
+            const successRate = stats.tests > 0 ? ((stats.passes / stats.tests) * 100).toFixed(0) : 0;
+            
+            console.log('### 📊 Cypress Test Results');
             console.log('');
             
             if (stats.failures === 0) {
-              console.log('### ✅ All tests passed successfully!');
+              console.log('### 🎉 All Tests Passed Successfully!');
             } else {
-              console.log(\`### ❌ \${stats.failures} test(s) failed. Please check the logs.\`);
+              console.log(\`### ⚠️ \${stats.failures} Test(s) Failed\`);
             }
+            
+            console.log('');
+            console.log(\`✅ **Tests Passing:** \${stats.passes}\`);
+            console.log(\`❌ **Tests Failing:** \${stats.failures}\`);
+            if (stats.pending > 0) {
+              console.log(\`⏭️ **Tests Pending:** \${stats.pending}\`);
+            }
+            console.log(\`⏱️ **Total Duration:** \${durationFormatted}\`);
+            console.log(\`📈 **Success Rate:** \${successRate}%\`);
+            
+            // Count video files
+            try {
+              const videoFiles = fs.readdirSync('cypress/videos').filter(f => f.endsWith('.mp4'));
+              console.log('');
+              console.log('### 🎥 Test Videos Generated');
+              console.log(\`\${videoFiles.length} video file(s) created\`);
+            } catch(e) {}
+            
+            console.log('');
+            if (stats.failures === 0) {
+              console.log('### ✅ Test Execution Complete');
+            } else {
+              console.log('### ❌ Test Execution Complete with Failures');
+            }
+            console.log('Check uploaded artifacts for detailed results');
             " >> $GITHUB_STEP_SUMMARY
           else
+            echo "### 📊 Cypress Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🎉 All Tests Passed Successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
             echo "✅ **All Cypress API tests completed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ✅ Test Execution Complete" >> $GITHUB_STEP_SUMMARY
+            echo "Check uploaded artifacts for detailed results" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Execution completed at:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Execution completed at: $(date -u +'%Y-%m-%d %H:%M:%S UTC')*" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload Cypress screenshots
         uses: actions/upload-artifact@v4
