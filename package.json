@@ -14,12 +14,15 @@
     "test:api": "cypress run --spec 'cypress/e2e/**/*.api.cy.js'",
     "test:headed": "cypress run --headed --spec 'cypress/e2e/**/*.api.cy.js'",
     "test:chrome": "cypress run --browser chrome --spec 'cypress/e2e/**/*.api.cy.js'",
-    "test:ci": "cypress run --browser electron --headless --spec 'cypress/e2e/**/*.api.cy.js' --reporter json --reporter-options output=cypress/results/results.json"
+    "test:ci": "cypress run --browser electron --headless --spec 'cypress/e2e/**/*.api.cy.js' --reporter spec --reporter-options \"mochaFile=cypress/results/results.json\""
   },
   "keywords": ["cypress", "api", "testing", "e2e"],
   "author": "Marcos Alvarez",
   "license": "ISC",
   "devDependencies": {
-    "cypress": "^13.6.0"
+    "cypress": "^13.6.0",
+    "mochawesome": "^7.1.3",
+    "mochawesome-merge": "^4.3.0",
+    "mochawesome-report-generator": "^6.2.0"
   }
 }
