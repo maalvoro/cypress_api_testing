@@ -85,10 +85,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ -f test-output.txt ]; then
-            # Extract test statistics
-            PASSING=$(grep -oP '\d+(?= passing)' test-output.txt | tail -1 || echo "0")
-            FAILING=$(grep -oP '\d+(?= failing)' test-output.txt | tail -1 || echo "0")
-            PENDING=$(grep -oP '\d+(?= pending)' test-output.txt | tail -1 || echo "0")
+            # Extract final summary line which has totals (appears at the end after all spec files)
+            # Cypress shows individual file results, then a final summary
+            PASSING=$(grep -oP '\d+(?= passing)' test-output.txt | awk '{sum+=$1} END {print sum}' || echo "0")
+            FAILING=$(grep -oP '\d+(?= failing)' test-output.txt | awk '{sum+=$1} END {print sum}' || echo "0")
+            PENDING=$(grep -oP '\d+(?= pending)' test-output.txt | awk '{sum+=$1} END {print sum}' || echo "0")
             
             # Calculate totals
             TOTAL=$((PASSING + FAILING + PENDING))
@@ -100,8 +101,8 @@ jobs:
               SUCCESS_RATE="0.0"
             fi
             
-            # Extract duration
-            DURATION=$(grep -oP '\(\K[^)]+(?=\))' test-output.txt | grep -E '\d+[sm]' | tail -1 || echo "N/A")
+            # Extract duration from final summary
+            DURATION=$(grep -A5 "All specs passed" test-output.txt | grep -oP '\d+:\d+|\d+[ms]' | head -1 || echo "N/A")
             
             # Count videos
             VIDEO_COUNT=$(find cypress/videos -name "*.mp4" 2>/dev/null | wc -l || echo "0")
@@ -118,7 +119,7 @@ jobs:
             echo "| 🎥 Videos | $VIDEO_COUNT |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             
-            if [ "$FAILING" != "0" ]; then
+            if [ "$FAILING" != "0" ] && [ "$FAILING" != "" ]; then
               echo "### ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
             else
               echo "### ✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
