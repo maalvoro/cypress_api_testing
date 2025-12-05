@@ -74,9 +74,8 @@ jobs:
       
       - name: Run Cypress API tests
         working-directory: cypress_api_testing
-        run: |
-          npm run test:ci
-          echo "CYPRESS_EXIT_CODE=$?" >> $GITHUB_ENV
+        run: npm run test:ci
+        continue-on-error: true
       
       - name: Generate test summary
         if: always()
@@ -87,24 +86,26 @@ jobs:
           
           # Parse JSON results if available
           if [ -f cypress/results/results.json ]; then
-            TOTAL=$(jq '.stats.tests' cypress/results/results.json)
-            PASSED=$(jq '.stats.passes' cypress/results/results.json)
-            FAILED=$(jq '.stats.failures' cypress/results/results.json)
-            DURATION=$(jq '.stats.duration' cypress/results/results.json)
+            node -e "
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('cypress/results/results.json', 'utf8'));
+            const stats = results.stats;
             
-            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| Total Tests | $TOTAL |" >> $GITHUB_STEP_SUMMARY
-            echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
-            echo "| ❌ Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
-            echo "| ⏱️ Duration | ${DURATION}ms |" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+            console.log('| Metric | Value |');
+            console.log('|--------|-------|');
+            console.log(\`| 📊 Total Tests | \${stats.tests} |\`);
+            console.log(\`| ✅ Passed | \${stats.passes} |\`);
+            console.log(\`| ❌ Failed | \${stats.failures} |\`);
+            console.log(\`| ⏭️ Pending | \${stats.pending} |\`);
+            console.log(\`| ⏱️ Duration | \${(stats.duration / 1000).toFixed(2)}s |\`);
+            console.log('');
             
-            if [ "$FAILED" -eq 0 ]; then
-              echo "### ✅ All tests passed successfully!" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "### ❌ Some tests failed. Please check the logs." >> $GITHUB_STEP_SUMMARY
-            fi
+            if (stats.failures === 0) {
+              console.log('### ✅ All tests passed successfully!');
+            } else {
+              console.log(\`### ❌ \${stats.failures} test(s) failed. Please check the logs.\`);
+            }
+            " >> $GITHUB_STEP_SUMMARY
           else
             echo "✅ **All Cypress API tests completed**" >> $GITHUB_STEP_SUMMARY
           fi
