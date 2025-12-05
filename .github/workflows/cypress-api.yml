@@ -74,57 +74,58 @@ jobs:
       
       - name: Run Cypress API tests
         working-directory: cypress_api_testing
-        run: npm run test:ci | tee test-output.txt
+        run: npm run test:ci 2>&1 | tee test-output.txt
         continue-on-error: true
       
       - name: Generate test summary
         if: always()
         working-directory: cypress_api_testing
         run: |
-          echo "# 🚀 Cypress API Testing" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🧪 Cypress API Testing Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Cypress Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## 🧪 Cypress API Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Extract test results from output
           if [ -f test-output.txt ]; then
+            # Extract test statistics
             PASSING=$(grep -oP '\d+(?= passing)' test-output.txt | tail -1 || echo "0")
             FAILING=$(grep -oP '\d+(?= failing)' test-output.txt | tail -1 || echo "0")
-            DURATION=$(grep -oP '\d+:\d+|\d+ seconds?|\d+ms' test-output.txt | tail -1 || echo "N/A")
+            PENDING=$(grep -oP '\d+(?= pending)' test-output.txt | tail -1 || echo "0")
             
-            if [ "$FAILING" == "0" ]; then
-              echo "### 🎉 All Tests Passed Successfully!" >> $GITHUB_STEP_SUMMARY
+            # Calculate totals
+            TOTAL=$((PASSING + FAILING + PENDING))
+            
+            # Calculate success rate
+            if [ $TOTAL -gt 0 ]; then
+              SUCCESS_RATE=$(awk "BEGIN {printf \"%.1f\", ($PASSING/$TOTAL)*100}")
             else
-              echo "### ⚠️ $FAILING Test(s) Failed" >> $GITHUB_STEP_SUMMARY
+              SUCCESS_RATE="0.0"
             fi
             
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "✅ **Tests Passing:** $PASSING" >> $GITHUB_STEP_SUMMARY
-            echo "❌ **Tests Failing:** $FAILING" >> $GITHUB_STEP_SUMMARY
-            echo "⏱️ **Total Duration:** $DURATION" >> $GITHUB_STEP_SUMMARY
+            # Extract duration
+            DURATION=$(grep -oP '\(\K[^)]+(?=\))' test-output.txt | grep -E '\d+[sm]' | tail -1 || echo "N/A")
             
-            if [ "$PASSING" -gt 0 ]; then
-              SUCCESS_RATE=$((PASSING * 100 / (PASSING + FAILING)))
-              echo "📈 **Success Rate:** ${SUCCESS_RATE}%" >> $GITHUB_STEP_SUMMARY
-            fi
-          fi
-          
-          # Count videos
-          VIDEO_COUNT=$(find cypress/videos -name "*.mp4" 2>/dev/null | wc -l || echo "0")
-          if [ "$VIDEO_COUNT" -gt 0 ]; then
+            # Count videos
+            VIDEO_COUNT=$(find cypress/videos -name "*.mp4" 2>/dev/null | wc -l || echo "0")
+            
+            # Generate table
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Tests Passing | $PASSING |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ Tests Failing | $FAILING |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏭️ Tests Pending | $PENDING |" >> $GITHUB_STEP_SUMMARY
+            echo "| 📊 Total Tests | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| 📈 Success Rate | ${SUCCESS_RATE}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏱️ Duration | $DURATION |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🎥 Videos | $VIDEO_COUNT |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 🎥 Test Videos Generated" >> $GITHUB_STEP_SUMMARY
-            echo "$VIDEO_COUNT video file(s) created" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$FAILING" != "0" ]; then
+              echo "### ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ No test output found" >> $GITHUB_STEP_SUMMARY
           fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ✅ Test Execution Complete" >> $GITHUB_STEP_SUMMARY
-          echo "Check uploaded artifacts for detailed results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "*Execution completed at: $(date -u +'%Y-%m-%d %H:%M:%S UTC')*" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload Cypress screenshots
         uses: actions/upload-artifact@v4
